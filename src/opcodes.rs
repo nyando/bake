@@ -4,6 +4,7 @@ use csv::ReaderBuilder;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+/// Associates a bytecode value to its corresponding mnemonic and its number of bytecode arguments.
 pub struct Op {
     #[serde(with = "hex")]
     pub opcode: [u8; 1],
@@ -11,6 +12,11 @@ pub struct Op {
     pub args: u8
 }
 
+///
+/// Creates a list of JVM bytecode opcodes from a corresponding CSV file.
+///
+/// Returns a mapping of opcode to `Op` structure describing the operation.
+///
 pub fn op_map() -> HashMap<u8, Op> {
     let opcodes : String = include_str!("opcodes.csv").to_string();
     let mut rdr = ReaderBuilder::new().from_reader(opcodes.as_bytes());

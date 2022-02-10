@@ -12,17 +12,17 @@ fn main() {
     let opmap = op_map();
     
     for (opcode, op) in op_map() {
-        println!("Opcode: {}, Mnemonic: {}, Args: {}", opcode, op.mnemonic, op.args);
+        println!("opcode {}, mnemonic {}, args {}", opcode, op.mnemonic, op.args);
     }
 
     for (index, value) in utf8_constants(&classinfo) {
-        println!("Index: {}, Value: {}", index, value);
+        println!("index {}, value {}", index, value);
     }
 
-    for (name, code) in code_blocks(&classinfo) {
-        println!("Method {}", name);
+    for (name, code_info) in code_blocks(&classinfo) {
+        println!("method {}, stack size {}, locals: {}", name, code_info.max_stack, code_info.max_locals);
 
-        let mut code_iter = code.iter();
+        let mut code_iter = code_info.code.iter();
         
         while let Some(opcode) = code_iter.next() {
             let op : &Op = &opmap[opcode];

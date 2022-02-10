@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::Error;
 
 #[binrw]
+/// Structures containing constants, metadata of the JVM class file.
 pub enum ConstPoolInfo {
     #[br(magic(7u8))] ConstClass {
         name_index: u16
@@ -64,6 +65,7 @@ pub enum ConstPoolInfo {
 }
 
 #[binrw]
+/// Structure containing information about the class fields.
 pub struct FieldInfo {
     access_flags: u16,
     name_index: u16,
@@ -74,6 +76,7 @@ pub struct FieldInfo {
 }
 
 #[binrw]
+/// Structure containing information about the class methods.
 pub struct MethodInfo {
     access_flags: u16,
     name_index: u16,
@@ -84,6 +87,7 @@ pub struct MethodInfo {
 }
 
 #[binrw]
+/// Generic container structure for an attribute of a class, method, field, etc.
 pub struct AttributeInfo {
     attribute_name_index: u16,
     attribute_length: u32,
@@ -92,6 +96,7 @@ pub struct AttributeInfo {
 }
 
 #[binrw]
+/// Exception table entry structure that forms part of a code attribute.
 pub struct ExceptionTableEntry {
     start_pc: u16,
     end_pc: u16,
@@ -100,9 +105,8 @@ pub struct ExceptionTableEntry {
 }
 
 #[binrw]
+/// JVM class file code attribute structure.
 pub struct CodeAttribute {
-    // attribute_name_index: u16,
-    // attribute_length: u32,
     max_stack: u16,
     max_locals: u16,
     code_length: u32,
@@ -116,7 +120,15 @@ pub struct CodeAttribute {
     attributes: Vec<AttributeInfo>
 }
 
+/// Structure containing the relevant method information for the Bali processor.
+pub struct BaliCode {
+    pub max_stack: u16,
+    pub max_locals: u16,
+    pub code: Vec<u8>
+}
+
 #[binrw]
+/// Top-level structure for a JVM class file.
 pub struct ClassFile {
     magic: u32,
     minor_version: u16,
@@ -141,7 +153,13 @@ pub struct ClassFile {
     attributes: Vec<AttributeInfo>
 }
 
-pub fn read_classfile(path : &str) -> Result<ClassFile, std::io::Error> {
+
+///
+/// Creates a `ClassFile` from the JVM class file given in the path.
+///
+/// Returns an error result if the file could not be parsed, otherwise returns a `ClassFile` structure.
+///
+pub fn read_classfile(path : &str) -> Result<ClassFile, Error> {
     let res = File::open(path);
 
     match res {
@@ -150,6 +168,11 @@ pub fn read_classfile(path : &str) -> Result<ClassFile, std::io::Error> {
     }
 }
 
+///
+/// Extracts UTF-8 String constants from class file constant pool definition.
+///
+/// Returns a mapping of the constant pool index (1-based) to the corresponding UTF-8 string as a string slice.
+///
 pub fn utf8_constants(class : &ClassFile) -> HashMap<u16, &str> {
     let mut utf8_constpool : HashMap<u16, &str> = HashMap::new();
 
@@ -170,9 +193,18 @@ pub fn utf8_constants(class : &ClassFile) -> HashMap<u16, &str> {
     utf8_constpool
 }
 
-pub fn code_blocks(class: &ClassFile) -> HashMap<&str, Vec<u8>> {
+///
+/// Extracts method names, information, and bytecode from class file structure.
+///
+/// Returns a mapping of the method names in the class to a `BaliCode` structure containing:
+///
+/// - maximum stack depth of the method
+/// - maximum number of local variables used by the method
+/// - vector of method bytecode
+///
+pub fn code_blocks(class: &ClassFile) -> HashMap<&str, BaliCode> {
 
-    let mut codeblocks : HashMap<&str, Vec<u8>> = HashMap::new();
+    let mut codeblocks : HashMap<&str, BaliCode> = HashMap::new();
 
     let utf8_constpool = utf8_constants(class);
 
@@ -186,7 +218,12 @@ pub fn code_blocks(class: &ClassFile) -> HashMap<&str, Vec<u8>> {
         if utf8_constpool[&attr_name_index].eq("Code") {
             let method_name : &str = utf8_constpool[&method_name_index];
             let code_attr : CodeAttribute = Cursor::new(&attr_info.info).read_be().unwrap();
-            codeblocks.insert(method_name, code_attr.code);
+            let code_info = BaliCode {
+                max_stack: code_attr.max_stack,
+                max_locals: code_attr.max_locals,
+                code: code_attr.code
+            };
+            codeblocks.insert(method_name, code_info);
         }
 
     }
