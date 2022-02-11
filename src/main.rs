@@ -6,32 +6,59 @@ use opcodes::*;
 
 use std::env;
 
-fn main() {
-    let args : Vec<String> = env::args().collect();
-    let classinfo = read_classfile(&args[1]).unwrap();
+const READ : &str = "read";
+
+fn print_method(name : &str, code_info : &BaliCode) {
+
     let opmap = op_map();
+    let mut code_iter = code_info.code.iter();
     
-    for (opcode, op) in op_map() {
-        println!("opcode {}, mnemonic {}, args {}", opcode, op.mnemonic, op.args);
-    }
-
-    for (index, value) in utf8_constants(&classinfo) {
-        println!("index {}, value {}", index, value);
-    }
-
-    for (name, code_info) in code_blocks(&classinfo) {
-        println!("method {}, stack size {}, locals: {}", name, code_info.max_stack, code_info.max_locals);
-
-        let mut code_iter = code_info.code.iter();
+    println!("method {} {}, stack size {}, locals: {}", name, code_info.signature, code_info.max_stack, code_info.max_locals);
+    
+    while let Some(opcode) = code_iter.next() {
         
-        while let Some(opcode) = code_iter.next() {
-            let op : &Op = &opmap[opcode];
-            match op.args {
-                0 => println!("{}", op.mnemonic),
-                1 => println!("{}: {}", op.mnemonic, code_iter.next().unwrap()),
-                2 => println!("{}: {} {}", op.mnemonic, code_iter.next().unwrap(), code_iter.next().unwrap()),
-                _ => println!("unknown opcode")
-            }
+        let op : &Op = &opmap[opcode];
+        
+        match op.args {
+            
+            0 => println!("{}", op.mnemonic),
+            
+            1 => {
+                let arg = code_iter.next().unwrap();
+                println!("{}: {:#04x}", op.mnemonic, arg);
+            },
+            
+            2 => {
+                let arg1 = code_iter.next().unwrap();
+                let arg2 = code_iter.next().unwrap();
+                println!("{}: {:#06x}", op.mnemonic, ((*arg1 as u16) << 8 | (*arg2 as u16)));
+            },
+            
+            _ => println!("unknown opcode")
         }
     }
+
+}
+
+fn analyze(classinfo : &ClassFile) {
+    
+    for (name, code_info) in code_blocks(&classinfo) {
+        print_method(&name, &code_info);
+    }
+
+}
+
+fn main() {
+
+    let args : Vec<String> = env::args().collect();
+
+    let task : &str = &args[1].to_lowercase();
+    let filepath : &str = &args[2];
+    let classinfo = read_classfile(filepath).unwrap();
+
+    match task {
+        READ => analyze(&classinfo),
+        _    => ()
+    };
+
 }

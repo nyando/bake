@@ -3,6 +3,7 @@ extern crate binrw;
 use std::io::Cursor;
 use crate::structs::binrw::BinReaderExt;
 use binrw::binrw;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Error;
@@ -64,6 +65,11 @@ pub enum ConstPoolInfo {
     }
 }
 
+pub enum ConstPoolValue {
+    UTF8String(String),
+    Integer(i32)
+}
+
 #[binrw]
 /// Structure containing information about the class fields.
 pub struct FieldInfo {
@@ -122,6 +128,7 @@ pub struct CodeAttribute {
 
 /// Structure containing the relevant method information for the Bali processor.
 pub struct BaliCode {
+    pub signature: String,
     pub max_stack: u16,
     pub max_locals: u16,
     pub code: Vec<u8>
@@ -169,12 +176,12 @@ pub fn read_classfile(path : &str) -> Result<ClassFile, Error> {
 }
 
 ///
-/// Extracts UTF-8 String constants from class file constant pool definition.
+/// Extracts UTF-8 String and integer constants from class file constant pool definition.
 ///
-/// Returns a mapping of the constant pool index (1-based) to the corresponding UTF-8 string as a string slice.
+/// Returns a mapping of the constant pool index (1-based) to the corresponding UTF-8 string as a string slice or i32 integer.
 ///
-pub fn utf8_constants(class : &ClassFile) -> HashMap<u16, &str> {
-    let mut utf8_constpool : HashMap<u16, &str> = HashMap::new();
+pub fn constants(class : &ClassFile) -> BTreeMap<u16, ConstPoolValue> {
+    let mut constpool : BTreeMap<u16, ConstPoolValue> = BTreeMap::new();
 
     for i in 0..class.constpool_count - 1 {
 
@@ -183,14 +190,17 @@ pub fn utf8_constants(class : &ClassFile) -> HashMap<u16, &str> {
         match const_info {
             ConstPoolInfo::ConstUTF8 { length: _, bytes } => {
                 let content : &str = std::str::from_utf8(bytes).unwrap();
-                utf8_constpool.insert(i + 1, content);
+                constpool.insert(i + 1, ConstPoolValue::UTF8String(content.to_string()));
             },
+            ConstPoolInfo::ConstInt { bytes } => {
+                constpool.insert(i + 1, ConstPoolValue::Integer(*bytes as i32));
+            }
             _ => { }
         }
 
     }
 
-    utf8_constpool
+    constpool
 }
 
 ///
@@ -202,27 +212,35 @@ pub fn utf8_constants(class : &ClassFile) -> HashMap<u16, &str> {
 /// - maximum number of local variables used by the method
 /// - vector of method bytecode
 ///
-pub fn code_blocks(class: &ClassFile) -> HashMap<&str, BaliCode> {
+pub fn code_blocks(class: &ClassFile) -> HashMap<String, BaliCode> {
 
-    let mut codeblocks : HashMap<&str, BaliCode> = HashMap::new();
+    let mut codeblocks : HashMap<String, BaliCode> = HashMap::new();
 
-    let utf8_constpool = utf8_constants(class);
+    let utf8_constpool : HashMap<u16, String> = constants(class)
+            .into_iter()
+            .filter(|(_, v)| matches!(v, ConstPoolValue::UTF8String(_)))
+            .map(|(k, v)| if let ConstPoolValue::UTF8String(value) = v { (k, value) } else { (k, "".to_string()) })
+            .collect();
 
     for i in 0..class.methods_count {
 
         let method_info : &MethodInfo = &class.methods[i as usize];
         let method_name_index : u16 = method_info.name_index;
+        let method_desc_index : u16 = method_info.descriptor_index;
         let attr_info : &AttributeInfo = &method_info.attributes[0];
         let attr_name_index : u16 = attr_info.attribute_name_index;
 
         if utf8_constpool[&attr_name_index].eq("Code") {
-            let method_name : &str = utf8_constpool[&method_name_index];
+            let method_name : String = utf8_constpool[&method_name_index].to_string();
+            let method_desc : String = utf8_constpool[&method_desc_index].to_string();
             let code_attr : CodeAttribute = Cursor::new(&attr_info.info).read_be().unwrap();
             let code_info = BaliCode {
+                signature: method_desc.to_string(),
                 max_stack: code_attr.max_stack,
                 max_locals: code_attr.max_locals,
                 code: code_attr.code
             };
+            // TODO: method name is not a unique identifier of a method, needs descriptor (overloading)
             codeblocks.insert(method_name, code_info);
         }
 
