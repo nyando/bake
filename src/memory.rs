@@ -54,12 +54,14 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
     let memlayout = memlayout(&classinfo);
     let opmap = opmap();
 
+    // map method reference index to Bali program memory address
     let mut refaddr : HashMap<u16, u16> = HashMap::new();
     for (methodref, methodname) in methodrefs {
         if methodname == INIT_SIG { continue; }
         refaddr.insert(methodref, *memlayout.0.get_by_right(&methodname).unwrap());
     }
 
+    // replace invokestatic address arguments with Bali memory addresses
     let codeblocks = codeblocks(&classinfo);
     let mut mem = Vec::with_capacity(memlayout.1.into());
     for (_, methodname) in memlayout.0 {
@@ -68,6 +70,7 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
 
         let mut argcount = 0;
         for (i, opcode) in code_old.iter().enumerate() {
+            // skip arguments in parsing opcodes
             if argcount > 0 {
                 argcount -= 1;
                 continue;
