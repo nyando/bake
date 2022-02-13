@@ -9,18 +9,14 @@ use std::env;
 const CONST : &str = "consts";
 const METHOD : &str = "methods";
 
-fn print_consts(classinfo : &ClassFile) {
-    let constpool = constants(&classinfo);
-
-    for (index, value) in &constpool {
-        match value {
-            ConstPoolValue::Class(name_ref) => println!("{}: {}", index, name_ref),
-            ConstPoolValue::Integer(int_const) => println!("{}: {}", index, int_const),
-            ConstPoolValue::MethodRef(_, desc_ref) => println!("{}: {}", index, parse_method_signature(&classinfo, desc_ref).unwrap()),
-            ConstPoolValue::NameAndType(name_ref, type_ref) => println!("{}: {}, {}", index, name_ref, type_ref),
-            ConstPoolValue::UTF8String(str_const) => println!("{}: {}", index, str_const)
-        };
-    }
+fn print_const(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue) {
+    match value {
+        ConstPoolValue::Class(name_ref) => println!("{}: {}", index, name_ref),
+        ConstPoolValue::Integer(int_const) => println!("{}: {}", index, int_const),
+        ConstPoolValue::MethodRef(_, desc_ref) => println!("{}: {}", index, parse_method_signature(&classinfo, desc_ref).unwrap()),
+        ConstPoolValue::NameAndType(name_ref, type_ref) => println!("{}: {}, {}", index, name_ref, type_ref),
+        ConstPoolValue::UTF8String(str_const) => println!("{}: {}", index, str_const)
+    };
 }
 
 fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
@@ -36,14 +32,11 @@ fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
         let op : &Op = &opmap[opcode];
         
         match op.args {
-            
             0 => println!("{}", op.mnemonic),
-            
             1 => {
                 let arg = code_iter.next().unwrap();
                 println!("{}: {:#04x}", op.mnemonic, arg);
             },
-            
             2 => {
                 let arg1 = code_iter.next().unwrap();
                 let arg2 = code_iter.next().unwrap();
@@ -56,9 +49,9 @@ fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
                     println!("{}: {:#06x}", op.mnemonic, arg);
                 }
             },
-            
             _ => println!("unknown opcode")
-        }
+        };
+
     }
 
 }
@@ -66,13 +59,16 @@ fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
 fn main() {
 
     let args : Vec<String> = env::args().collect();
-
     let task : &str = &args[1].to_lowercase();
     let filepath : &str = &args[2];
     let classinfo = read_classfile(filepath).unwrap();
 
     match task {
-        CONST => print_consts(&classinfo),
+        CONST => {
+            for (index, value) in constants(&classinfo) {
+                print_const(&classinfo, &index, &value);
+            }
+        },
         METHOD => {
             for (name, code_info) in code_blocks(&classinfo) {
                 print_method(&classinfo, &name, &code_info);
