@@ -12,11 +12,18 @@ checksum = "6945cc5422176fc5e602e590c2878d2c2acd9a4fe20a4baa7c28022521698ec6"
 name = "bake"
 version = "0.1.0"
 dependencies = [
+ "bimap",
  "binrw",
  "csv",
  "hex",
  "serde",
 ]
+
+[[package]]
+name = "bimap"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc0455254eb5c6964c4545d8bac815e1a1be4f3afe0ae695ea539c12d728d44b"
 
 [[package]]
 name = "binrw"

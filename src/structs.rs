@@ -1,12 +1,14 @@
 extern crate binrw;
+extern crate bimap;
 
-use std::io::Cursor;
-use crate::structs::binrw::BinReaderExt;
-use binrw::binrw;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
+use bimap::BiMap;
+
+use binrw::{binrw, BinReaderExt};
+
+use std::collections::{BTreeMap, HashMap};
+
+use std::io::{Cursor, Error, ErrorKind};
 use std::fs::File;
-use std::io::{Error, ErrorKind};
 
 #[binrw]
 /// Structures containing constants, metadata of the JVM class file.
@@ -242,9 +244,9 @@ pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result
 ///
 /// Returns a map of integers (constpool indices) to strings (method signatures).
 ///
-pub fn methodrefs(classinfo : &ClassFile) -> HashMap<u16, String> {
+pub fn methodrefs(classinfo : &ClassFile) -> BiMap<u16, String> {
     let constpool = constants(&classinfo);
-    let mut refmap : HashMap<u16, String> = HashMap::new();
+    let mut refmap : BiMap<u16, String> = BiMap::new();
 
     for (index, value) in &constpool {
         match value {
@@ -267,7 +269,7 @@ pub fn methodrefs(classinfo : &ClassFile) -> HashMap<u16, String> {
 /// - maximum number of local variables used by the method
 /// - vector of method bytecode
 ///
-pub fn code_blocks(class: &ClassFile) -> HashMap<String, BaliCode> {
+pub fn codeblocks(class: &ClassFile) -> HashMap<String, BaliCode> {
 
     let mut codeblocks : HashMap<String, BaliCode> = HashMap::new();
 
