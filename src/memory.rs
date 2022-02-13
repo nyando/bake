@@ -66,8 +66,15 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
         let code_old = codeblocks[&methodname].code.to_vec();
         let mut code_new = codeblocks[&methodname].code.to_vec();
 
+        let mut argcount = 0;
         for (i, opcode) in code_old.iter().enumerate() {
-            let op = if opmap.contains_key(opcode) { &opmap[opcode] } else { continue; };
+            if argcount > 0 {
+                argcount -= 1;
+                continue;
+            }
+            
+            let op = &opmap[opcode];
+            argcount = op.args;
 
             if op.mnemonic == "invokestatic" {
                 let arg = (code_old[i + 1] as u16) << 8 | (code_old[i + 2] as u16);
