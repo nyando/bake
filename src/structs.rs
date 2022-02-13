@@ -6,7 +6,7 @@ use binrw::binrw;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 #[binrw]
 /// Structures containing constants, metadata of the JVM class file.
@@ -65,9 +65,13 @@ pub enum ConstPoolInfo {
     }
 }
 
+/// Structures for constant pool objects needed for Bali binaries.
 pub enum ConstPoolValue {
-    UTF8String(String),
-    Integer(i32)
+    Class(u16),
+    Integer(i32),
+    MethodRef(u16, u16),
+    NameAndType(u16, u16),
+    UTF8String(String)
 }
 
 #[binrw]
@@ -128,7 +132,6 @@ pub struct CodeAttribute {
 
 /// Structure containing the relevant method information for the Bali processor.
 pub struct BaliCode {
-    pub signature: String,
     pub max_stack: u16,
     pub max_locals: u16,
     pub code: Vec<u8>
@@ -194,6 +197,15 @@ pub fn constants(class : &ClassFile) -> BTreeMap<u16, ConstPoolValue> {
             },
             ConstPoolInfo::ConstInt { bytes } => {
                 constpool.insert(i + 1, ConstPoolValue::Integer(*bytes as i32));
+            },
+            ConstPoolInfo::ConstMethodRef { class_index, name_and_type_index } => {
+                constpool.insert(i + 1, ConstPoolValue::MethodRef(*class_index, *name_and_type_index));
+            },
+            ConstPoolInfo::ConstNameAndType { name_index, descriptor_index } => {
+                constpool.insert(i + 1, ConstPoolValue::NameAndType(*name_index, *descriptor_index));
+            }
+            ConstPoolInfo::ConstClass { name_index } => {
+                constpool.insert(i + 1, ConstPoolValue::Class(*name_index));
             }
             _ => { }
         }
@@ -201,6 +213,39 @@ pub fn constants(class : &ClassFile) -> BTreeMap<u16, ConstPoolValue> {
     }
 
     constpool
+}
+
+pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result<String, Error> {
+    let constpool = constants(&classinfo);
+    let mut signature = "".to_string();
+    let error = Error::new(ErrorKind::Other, "could not parse method reference");
+
+    if let ConstPoolValue::NameAndType(name_ref, type_ref) = constpool[&desc_ref] {
+        if let ConstPoolValue::UTF8String(method_name) = &constpool[&name_ref] {
+            signature.push_str(method_name);
+        } else { return Err(error); }
+        if let ConstPoolValue::UTF8String(type_signature) = &constpool[&type_ref] {
+            signature.push_str(type_signature);
+        } else { return Err(error); }
+    }
+
+    Ok(signature)
+}
+
+pub fn methodrefs(classinfo : &ClassFile) -> HashMap<u16, String> {
+    let constpool = constants(&classinfo);
+    let mut refmap : HashMap<u16, String> = HashMap::new();
+
+    for (index, value) in &constpool {
+        match value {
+            ConstPoolValue::MethodRef(_, desc_ref) => {
+                refmap.insert(*index, parse_method_signature(&classinfo, desc_ref).unwrap());
+            },
+            _ => ()
+        }
+    }
+
+    refmap
 }
 
 ///
@@ -231,16 +276,15 @@ pub fn code_blocks(class: &ClassFile) -> HashMap<String, BaliCode> {
         let attr_name_index : u16 = attr_info.attribute_name_index;
 
         if utf8_constpool[&attr_name_index].eq("Code") {
-            let method_name : String = utf8_constpool[&method_name_index].to_string();
+            let mut method_name : String = utf8_constpool[&method_name_index].to_string();
             let method_desc : String = utf8_constpool[&method_desc_index].to_string();
             let code_attr : CodeAttribute = Cursor::new(&attr_info.info).read_be().unwrap();
             let code_info = BaliCode {
-                signature: method_desc.to_string(),
                 max_stack: code_attr.max_stack,
                 max_locals: code_attr.max_locals,
                 code: code_attr.code
             };
-            // TODO: method name is not a unique identifier of a method, needs descriptor (overloading)
+            method_name.push_str(&method_desc);
             codeblocks.insert(method_name, code_info);
         }
 

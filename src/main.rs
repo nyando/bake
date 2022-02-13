@@ -6,14 +6,30 @@ use opcodes::*;
 
 use std::env;
 
-const READ : &str = "read";
+const CONST : &str = "consts";
+const METHOD : &str = "methods";
 
-fn print_method(name : &str, code_info : &BaliCode) {
+fn print_consts(classinfo : &ClassFile) {
+    let constpool = constants(&classinfo);
 
-    let opmap = op_map();
+    for (index, value) in &constpool {
+        match value {
+            ConstPoolValue::Class(name_ref) => println!("{}: {}", index, name_ref),
+            ConstPoolValue::Integer(int_const) => println!("{}: {}", index, int_const),
+            ConstPoolValue::MethodRef(_, desc_ref) => println!("{}: {}", index, parse_method_signature(&classinfo, desc_ref).unwrap()),
+            ConstPoolValue::NameAndType(name_ref, type_ref) => println!("{}: {}, {}", index, name_ref, type_ref),
+            ConstPoolValue::UTF8String(str_const) => println!("{}: {}", index, str_const)
+        };
+    }
+}
+
+fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
+
+    let opmap = opmap();
     let mut code_iter = code_info.code.iter();
+    let methodrefs = methodrefs(&classinfo);
     
-    println!("method {} {}, stack size {}, locals: {}", name, code_info.signature, code_info.max_stack, code_info.max_locals);
+    println!("method {}, stack size {}, locals: {}", name, code_info.max_stack, code_info.max_locals);
     
     while let Some(opcode) = code_iter.next() {
         
@@ -31,19 +47,17 @@ fn print_method(name : &str, code_info : &BaliCode) {
             2 => {
                 let arg1 = code_iter.next().unwrap();
                 let arg2 = code_iter.next().unwrap();
-                println!("{}: {:#06x}", op.mnemonic, ((*arg1 as u16) << 8 | (*arg2 as u16)));
+                let arg = ((*arg1 as u16) << 8 | (*arg2 as u16)) as u16;
+
+                if op.mnemonic == "invokestatic" {
+                    println!("{}: {}", op.mnemonic, methodrefs[&arg]);
+                } else {
+                    println!("{}: {:#06x}", op.mnemonic, arg);
+                }
             },
             
             _ => println!("unknown opcode")
         }
-    }
-
-}
-
-fn analyze(classinfo : &ClassFile) {
-    
-    for (name, code_info) in code_blocks(&classinfo) {
-        print_method(&name, &code_info);
     }
 
 }
@@ -57,8 +71,13 @@ fn main() {
     let classinfo = read_classfile(filepath).unwrap();
 
     match task {
-        READ => analyze(&classinfo),
-        _    => ()
+        CONST => print_consts(&classinfo),
+        METHOD => {
+            for (name, code_info) in code_blocks(&classinfo) {
+                print_method(&classinfo, &name, &code_info);
+            }
+        },
+        _ => ()
     };
 
 }

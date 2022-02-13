@@ -17,7 +17,7 @@ pub struct Op {
 ///
 /// Returns a mapping of opcode to `Op` structure describing the operation.
 ///
-pub fn op_map() -> HashMap<u8, Op> {
+pub fn opmap() -> HashMap<u8, Op> {
     let opcodes : String = include_str!("opcodes.csv").to_string();
     let mut rdr = ReaderBuilder::new().from_reader(opcodes.as_bytes());
     let mut opmap = HashMap::new();
