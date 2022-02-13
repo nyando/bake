@@ -47,8 +47,9 @@ fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
             2 => {
                 let arg1 = code_iter.next().unwrap();
                 let arg2 = code_iter.next().unwrap();
-                let arg = ((*arg1 as u16) << 8 | (*arg2 as u16)) as u16;
+                let arg : u16 = (*arg1 as u16) << 8 | (*arg2 as u16);
 
+                // if static method invocation, print signature of invoked method
                 if op.mnemonic == "invokestatic" {
                     println!("{}: {}", op.mnemonic, methodrefs[&arg]);
                 } else {

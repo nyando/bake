@@ -215,6 +215,11 @@ pub fn constants(class : &ClassFile) -> BTreeMap<u16, ConstPoolValue> {
     constpool
 }
 
+///
+/// Parse method signature given the `NameAndType` constant reference of its method reference.
+///
+/// Returns a Result of the string containing the method signature, or an error if the corresponding reference isn't found.
+///
 pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result<String, Error> {
     let constpool = constants(&classinfo);
     let mut signature = "".to_string();
@@ -232,6 +237,11 @@ pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result
     Ok(signature)
 }
 
+///
+/// Create mapping of method reference indices to corresponding method signature strings.
+///
+/// Returns a map of integers (constpool indices) to strings (method signatures).
+///
 pub fn methodrefs(classinfo : &ClassFile) -> HashMap<u16, String> {
     let constpool = constants(&classinfo);
     let mut refmap : HashMap<u16, String> = HashMap::new();
