@@ -19,6 +19,6 @@ The address has a length of 16 bits, while the maximum number of local variables
 
 | Method Index (addr) | Method Address | Method Local Variable Array Size |
 |:--------------------|:---------------|:---------------------------------|
-| 0 (`0x0000`)          | `0x0015`       | `0x04`                           |
-| 1 (`0x0003`)          | `0x0028`       | `0x02`                           |
-| 2 (`0x0006)          | `0x0040`       | `0x03`                           |
+| 0 (`0x0000`)        | `0x0015`       | `0x04`                           |
+| 1 (`0x0003`)        | `0x0028`       | `0x02`                           |
+| 2 (`0x0006`)        | `0x0040`       | `0x03`                           |
