@@ -9,3 +9,11 @@ To accomplish this, `bake` will offer the following functionality:
 
 `bake` is developed in Rust and uses the [`binrw`](https://github.com/jam1garner/binrw)
 and [`rust-csv`](https://github.com/BurntSushi/rust-csv) packages for parsing.
+
+## Functionality
+
+Command format: `bake [COMMAND] [CLASS FILE]`
+
+- `consts` - Extracts constants from a Java `.class` file.
+- `methods` - Parse method structures and display their bytecode.
+- `gen` - Emit a binary file to write into the Bali processor program memory.
