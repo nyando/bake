@@ -11,15 +11,7 @@ const INIT_SIG : &str = "<init>()V";
 const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
 const LUTENTRY : u8   = 3;
 
-///
-/// Creates memory layout for Bali program memory out of a JVM class file.
-///
-/// Returns:
-///
-///   1. A bidirectional map that maps a method's address to its signature.
-///   2. The total size of the memory block for the given class file.
-///
-pub fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
+fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
     let codeblocks = codeblocks(&classinfo);
 
     let maincode = &codeblocks[MAIN_SIG];

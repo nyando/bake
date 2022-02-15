@@ -14,7 +14,6 @@ use std::io::Write;
 
 const CONST : &str = "consts";
 const METHOD : &str = "methods";
-const MEMLAYOUT : &str = "layout";
 const BINARY : &str = "gen";
 
 fn print_const(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue) {
@@ -81,13 +80,6 @@ fn main() -> std::io::Result<()> {
             for (name, code_info) in codeblocks(&classinfo) {
                 print_method(&classinfo, &name, &code_info);
             }
-        },
-        MEMLAYOUT => {
-            let memlayout = memlayout(&classinfo);
-            for (addr, name) in memlayout.0 {
-                println!("address of method {}: {:#06x}", name, addr);
-            }
-            println!("total memory size: {}", memlayout.1);
         },
         BINARY => {
             let binary = binarygen(&classinfo);
