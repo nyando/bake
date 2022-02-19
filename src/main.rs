@@ -1,3 +1,6 @@
+extern crate clap;
+use clap::{Subcommand, Parser};
+
 mod structs;
 use structs::*;
 
@@ -7,14 +10,50 @@ use opcodes::*;
 mod memory;
 use memory::*;
 
-use std::env;
+mod uart;
+use uart::*;
+
 use std::path::Path;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 
-const CONST : &str = "consts";
-const METHOD : &str = "methods";
-const BINARY : &str = "gen";
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Extract constants from JVM class file
+    Consts {
+        /// Path of the class file to parse
+        #[clap(short, long)]
+        classfile: String
+    },
+    /// Extract method information from JVM class file
+    Method {
+        /// Path of the class file to parse
+        #[clap(short, long)]
+        classfile: String
+    },
+    /// Generate Bali binary from JVM class file
+    Binary {
+        /// Path of the class file to convert to binary 
+        #[clap(short, long)]
+        classfile: String
+    },
+    /// Write Bali binary to serial Bali device
+    Serial {
+        /// Path of the binary file to transfer to Bali device
+        #[clap(short, long)]
+        bin: String,
+        /// Serial device identifier of target Bali device
+        #[clap(short, long)]
+        device: String
+    }
+}
 
 fn print_const(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue) {
     match value {
@@ -63,31 +102,43 @@ fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
 
 }
 
+fn read_binary(path : &str) -> Vec<u8> {
+    let res = File::open(path);
+    let mut buffer = Vec::new();
+
+    res.unwrap().read_to_end(&mut buffer).unwrap();
+
+    buffer
+}
+
 fn main() -> std::io::Result<()> {
 
-    let args : Vec<String> = env::args().collect();
-    let task : &str = &args[1].to_lowercase();
-    let filepath : &str = &args[2];
-    let classinfo = read_classfile(filepath)?;
+    let task = Args::parse();
 
-    match task {
-        CONST => {
+    match &task.command {
+        Commands::Consts { classfile } => {
+            let classinfo = read_classfile(classfile)?;
             for (index, value) in constants(&classinfo) {
                 print_const(&classinfo, &index, &value);
             }
         },
-        METHOD => {
+        Commands::Method { classfile } => {
+            let classinfo = read_classfile(classfile)?;
             for (name, code_info) in codeblocks(&classinfo) {
                 print_method(&classinfo, &name, &code_info);
             }
         },
-        BINARY => {
+        Commands::Binary { classfile } => {
+            let classinfo = read_classfile(classfile)?;
             let binary = binarygen(&classinfo);
-            let outpath = Path::new(&filepath).with_extension("bali.out");
+            let outpath = Path::new(&classfile).with_extension("bali.out");
             let mut buffer = File::create(outpath.to_str().unwrap())?;
             buffer.write_all(&binary)?;
         },
-        _ => ()
+        Commands::Serial { bin, device } => {
+            let _binary = read_binary(bin);
+            open_serial(device)?;
+        }
     };
 
     Ok(())
