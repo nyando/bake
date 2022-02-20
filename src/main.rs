@@ -1,3 +1,4 @@
+extern crate bat;
 extern crate clap;
 extern crate hexyl;
 
@@ -6,11 +7,14 @@ use clap::{Subcommand, Parser};
 mod structs;
 use structs::*;
 
+mod memory;
+use memory::*;
+
 mod opcodes;
 use opcodes::*;
 
-mod memory;
-use memory::*;
+mod print;
+use print::*;
 
 mod uart;
 use uart::*;
@@ -57,53 +61,6 @@ enum Commands {
     }
 }
 
-fn print_const(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue) {
-    match value {
-        ConstPoolValue::Class(name_ref) => println!("{}: {}", index, name_ref),
-        ConstPoolValue::Integer(int_const) => println!("{}: {}", index, int_const),
-        ConstPoolValue::MethodRef(_, desc_ref) => println!("{}: {}", index, parse_method_signature(&classinfo, desc_ref).unwrap()),
-        ConstPoolValue::NameAndType(name_ref, type_ref) => println!("{}: {}, {}", index, name_ref, type_ref),
-        ConstPoolValue::UTF8String(str_const) => println!("{}: {}", index, str_const)
-    };
-}
-
-fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
-
-    let opmap = opmap();
-    let mut code_iter = code_info.code.iter();
-    let methodrefs = methodrefs(&classinfo);
-    
-    println!("method {}, stack size {}, locals: {}", name, code_info.max_stack, code_info.max_locals);
-    
-    while let Some(opcode) = code_iter.next() {
-        
-        let op : &Op = &opmap[opcode];
-        
-        match op.args {
-            0 => println!("{}", op.mnemonic),
-            1 => {
-                let arg = code_iter.next().unwrap();
-                println!("{}: {:#04x}", op.mnemonic, arg);
-            },
-            2 => {
-                let arg1 = code_iter.next().unwrap();
-                let arg2 = code_iter.next().unwrap();
-                let arg : u16 = (*arg1 as u16) << 8 | (*arg2 as u16);
-
-                // if static method invocation, print signature of invoked method
-                if op.mnemonic == "invokestatic" {
-                    println!("{}: {}", op.mnemonic, methodrefs.get_by_left(&arg).unwrap());
-                } else {
-                    println!("{}: {:#06x}", op.mnemonic, arg);
-                }
-            },
-            _ => println!("unknown opcode")
-        };
-
-    }
-
-}
-
 fn read_binary(path : &str) -> Vec<u8> {
     let res = File::open(path);
     let mut buffer = Vec::new();
@@ -121,13 +78,15 @@ fn main() -> std::io::Result<()> {
         Commands::Consts { classfile } => {
             let classinfo = read_classfile(classfile)?;
             for (index, value) in constants(&classinfo) {
-                print_const(&classinfo, &index, &value);
+                println!("{}", constoutput(&classinfo, &index, &value));
             }
         },
         Commands::Method { classfile } => {
             let classinfo = read_classfile(classfile)?;
             for (name, code_info) in codeblocks(&classinfo) {
-                print_method(&classinfo, &name, &code_info);
+                if name == INIT_SIG { continue; }
+                let signature = methodstring(&name);
+                print_method(&classinfo, &signature, &code_info);
             }
         },
         Commands::Binary { classfile } => {

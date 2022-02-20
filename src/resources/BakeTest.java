@@ -1,11 +1,11 @@
 class BakeTest {
 
-    public static int test(int arg) {
-        return arg;
+    public static boolean test(int arg) {
+        return arg == 20;
     }
     
     public static void main(String[] args) {
-        int testVariable = 20;
+        int testVariable = 345678;
         test(testVariable);
     }
 

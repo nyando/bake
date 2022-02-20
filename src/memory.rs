@@ -7,8 +7,9 @@ use bimap::BiBTreeMap;
 
 use std::collections::{HashMap, BTreeMap};
 
-const INIT_SIG : &str = "<init>()V";
-const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
+pub const INIT_SIG : &str = "<init>()V";
+pub const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
+
 const LUTENTRY : usize = 4;
 
 pub fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {

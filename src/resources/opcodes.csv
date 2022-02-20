@@ -76,3 +76,4 @@ b1,return,0
 b7,invokespecial,2
 b8,invokestatic,2
 bc,newarray,1
+be,arraylength,0
