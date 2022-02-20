@@ -5,7 +5,7 @@ use bimap::BiMap;
 
 use binrw::{binrw, BinReaderExt};
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use std::io::{Cursor, Error, ErrorKind};
 use std::fs::File;
@@ -269,11 +269,11 @@ pub fn methodrefs(classinfo : &ClassFile) -> BiMap<u16, String> {
 /// - maximum number of local variables used by the method
 /// - vector of method bytecode
 ///
-pub fn codeblocks(class: &ClassFile) -> HashMap<String, BaliCode> {
+pub fn codeblocks(class: &ClassFile) -> BTreeMap<String, BaliCode> {
 
-    let mut codeblocks : HashMap<String, BaliCode> = HashMap::new();
+    let mut codeblocks : BTreeMap<String, BaliCode> = BTreeMap::new();
 
-    let utf8_constpool : HashMap<u16, String> = constants(class)
+    let utf8_constpool : BTreeMap<u16, String> = constants(class)
             .into_iter()
             .filter(|(_, v)| matches!(v, ConstPoolValue::UTF8String(_)))
             .map(|(k, v)| if let ConstPoolValue::UTF8String(value) = v { (k, value) } else { (k, "".to_string()) })

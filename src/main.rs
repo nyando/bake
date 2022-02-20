@@ -136,8 +136,9 @@ fn main() -> std::io::Result<()> {
             buffer.write_all(&binary)?;
         },
         Commands::Serial { bin, device } => {
-            let _binary = read_binary(bin);
-            open_serial(device)?;
+            let binary = read_binary(bin);
+            let mut port = open_serial(device);
+            binwrite(&mut port, &binary)?;
         }
     };
 
