@@ -47,8 +47,6 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>) {
         .map(|(k, v)| if let ConstPoolValue::Integer(value) = v { (k, value) } else { (0, 0) })
         .collect();
 
-    println!("lut size: {} methods, {} integer constants", memlayout.len(), ints.len());
-
     let method_entry_count : usize = memlayout.len();
     let consts_entry_count : usize = ints.len();
     let lutsize : usize = LUTENTRY * method_entry_count + LUTENTRY * consts_entry_count;
@@ -94,7 +92,6 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
     for (methodref, methodname) in methodrefs {
         if methodname == INIT_SIG { continue; }
         refaddr.insert(methodref, index);
-        println!("method {} ref {} maps to {}", methodname, methodref, index);
         index += 1;
     }
 

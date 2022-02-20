@@ -1,4 +1,6 @@
 extern crate clap;
+extern crate hexyl;
+
 use clap::{Subcommand, Parser};
 
 mod structs;
@@ -133,7 +135,15 @@ fn main() -> std::io::Result<()> {
             let binary = binarygen(&classinfo);
             let outpath = Path::new(&classfile).with_extension("bali.out");
             let mut buffer = File::create(outpath.to_str().unwrap())?;
+
             buffer.write_all(&binary)?;
+
+            hexyl::Printer::new(
+                &mut std::io::stdout(),
+                false,
+                hexyl::BorderStyle::Ascii,
+                true
+            ).print_all(std::io::Cursor::new(binary)).unwrap();
         },
         Commands::Serial { bin, device } => {
             let binary = read_binary(bin);
