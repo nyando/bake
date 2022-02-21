@@ -12,7 +12,7 @@ pub const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
 
 const LUTENTRY : usize = 4;
 
-pub fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
+fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
     let codeblocks = codeblocks(&classinfo);
 
     let maincode = &codeblocks[MAIN_SIG];

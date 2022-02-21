@@ -13,7 +13,6 @@ pub fn constoutput(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue
 }
 
 fn fieldtype(typeid : &str) -> String {
-    println!("{}", typeid);
     return match typeid {
         "B" => "byte".to_string(),
         "C" => "char".to_string(),
@@ -105,7 +104,7 @@ pub fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) 
                     output.append(&mut format!("{:>3x}: {:15} {:#06x}\n", addr, op.mnemonic, arg).into_bytes());
                 }
             },
-            _ => println!("unknown opcode")
+            _ => panic!("unknown opcode")
         };
 
         addr += op.args + 1;
