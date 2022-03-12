@@ -13,10 +13,10 @@ pub const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
 const LUTENTRY : usize = 4;
 
 fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
-    let codeblocks = codeblocks(&classinfo);
+    let codeblocks = codeblocks(classinfo);
 
     let maincode = &codeblocks[MAIN_SIG];
-    let mainsize : u16 = maincode.code.iter().count().try_into().unwrap();
+    let mainsize : u16 = maincode.code.len() as u16;
 
     let mut currentaddr : u16 = 0;
     let mut methodaddrs : BiBTreeMap<u16, String> = BiBTreeMap::new();
@@ -29,7 +29,7 @@ fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
         // main is already in the map, <init> ignored
         if name == MAIN_SIG || name == INIT_SIG { continue; }
 
-        let codesize : u16 = codeblock.code.iter().count().try_into().unwrap();
+        let codesize : u16 = codeblock.code.len() as u16;
         methodaddrs.insert(currentaddr, name);
         currentaddr += codesize;
 
@@ -39,10 +39,10 @@ fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
 }
 
 fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>) {
-    let codeblocks = codeblocks(&classinfo);
-    let (memlayout, _) = memlayout(&classinfo);
+    let codeblocks = codeblocks(classinfo);
+    let (memlayout, _) = memlayout(classinfo);
 
-    let ints : BTreeMap<u16, i32> = constants(&classinfo)
+    let ints : BTreeMap<u16, i32> = constants(classinfo)
         .into_iter()
         .filter(|(_, v)| matches!(v, ConstPoolValue::Integer(_)))
         .map(|(k, v)| if let ConstPoolValue::Integer(value) = v { (k, value) } else { (0, 0) })
@@ -82,9 +82,9 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>) {
 /// Returns byte vector for writing to output file.
 ///
 pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
-    let methodrefs = methodrefs(&classinfo);
-    let (memlayout, codesize) = memlayout(&classinfo);
-    let (mut methodlut, intrefs) = luts(&classinfo);
+    let methodrefs = methodrefs(classinfo);
+    let (memlayout, codesize) = memlayout(classinfo);
+    let (mut methodlut, intrefs) = luts(classinfo);
     let opmap = opmap();
 
     // map method reference index to Bali program memory address
@@ -97,7 +97,7 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
     }
 
     // replace invokestatic address arguments with Bali memory addresses
-    let codeblocks = codeblocks(&classinfo);
+    let codeblocks = codeblocks(classinfo);
     let memsize = methodlut.len() as u16 + codesize;
     let mut mem = Vec::with_capacity(memsize.into());
     mem.append(&mut methodlut);

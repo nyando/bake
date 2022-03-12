@@ -4,11 +4,11 @@ use crate::{BaliCode, ConstPoolValue, ClassFile, Op};
 
 pub fn constoutput(classinfo : &ClassFile, index : &u16, value : &ConstPoolValue) -> String {
     match value {
-        ConstPoolValue::Class(name_ref)                 => format!("{}: {}", index, name_ref).to_string(),
-        ConstPoolValue::Integer(int_const)              => format!("{}: {}", index, int_const).to_string(),
-        ConstPoolValue::MethodRef(_, desc_ref)          => format!("{}: {}", index, parse_method_signature(&classinfo, desc_ref).unwrap()).to_string(),
-        ConstPoolValue::NameAndType(name_ref, type_ref) => format!("{}: {}, {}", index, name_ref, type_ref).to_string(),
-        ConstPoolValue::UTF8String(str_const)           => format!("{}: {}", index, str_const).to_string()
+        ConstPoolValue::Class(name_ref)                 => format!("{}: {}", index, name_ref),
+        ConstPoolValue::Integer(int_const)              => format!("{}: {}", index, int_const),
+        ConstPoolValue::MethodRef(_, desc_ref)          => format!("{}: {}", index, parse_method_signature(classinfo, desc_ref).unwrap()),
+        ConstPoolValue::NameAndType(name_ref, type_ref) => format!("{}: {}, {}", index, name_ref, type_ref),
+        ConstPoolValue::UTF8String(str_const)           => format!("{}: {}", index, str_const)
     }
 }
 
@@ -67,14 +67,14 @@ pub fn methodstring(sig : &str) -> String {
         false
     });
 
-    return format!("{} {}({})", returntype, name, argstring).to_string();
+    format!("{} {}({})", returntype, name, argstring)
 }
 
 pub fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) {
 
     let opmap = opmap();
     let mut code_iter = code_info.code.iter();
-    let methodrefs = methodrefs(&classinfo);
+    let methodrefs = methodrefs(classinfo);
 
     let mut output : Vec<u8> = Vec::new();
 
@@ -111,7 +111,7 @@ pub fn print_method(classinfo : &ClassFile, name : &str, code_info : &BaliCode) 
     }
     
     let inputstruct = bat::Input::from_reader(std::io::Cursor::new(&output))
-        .title(format!("{}", name));
+        .title(name.to_string());
 
     bat::PrettyPrinter::new()
         .input(inputstruct)

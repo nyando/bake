@@ -14,17 +14,21 @@ pub fn open_serial(port_id : &str) -> Box<dyn SerialPort> {
         .expect("could not open serial port")
 }
 
-pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &Vec<u8>) -> std::io::Result<()> {
+pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> std::io::Result<()> {
     for byte in bin {
         
         let to_write : Vec<u8> = vec!(*byte);
         port.write_all(&to_write)?;
 
         let mut response : Vec<u8> = vec![0; 1];
-        port.read(&mut response)?;
+        port.read_exact(&mut response)?;
         for entry in response { println!("serial port confirmed byte {:#04x}", entry); }
 
     }
     
     Ok(())
+}
+
+pub fn _memread(_port : &mut Box<dyn SerialPort>, _lo : usize, _hi : usize) {
+    // read from Bali processor memory
 }

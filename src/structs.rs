@@ -176,7 +176,7 @@ pub fn read_classfile(path : &str) -> Result<ClassFile, Error> {
 
     match res {
         Ok(mut file) => Ok(file.read_be().unwrap()),
-        Err(err)     => Err(Error::from(err))
+        Err(err)     => Err(err)
     }
 }
 
@@ -223,11 +223,11 @@ pub fn constants(class : &ClassFile) -> BTreeMap<u16, ConstPoolValue> {
 /// Returns a Result of the string containing the method signature, or an error if the corresponding reference isn't found.
 ///
 pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result<String, Error> {
-    let constpool = constants(&classinfo);
+    let constpool = constants(classinfo);
     let mut signature = "".to_string();
     let error = Error::new(ErrorKind::Other, "could not parse method reference");
 
-    if let ConstPoolValue::NameAndType(name_ref, type_ref) = constpool[&desc_ref] {
+    if let ConstPoolValue::NameAndType(name_ref, type_ref) = constpool[desc_ref] {
         if let ConstPoolValue::UTF8String(method_name) = &constpool[&name_ref] {
             signature.push_str(method_name);
         } else { return Err(error); }
@@ -245,15 +245,12 @@ pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result
 /// Returns a map of integers (constpool indices) to strings (method signatures).
 ///
 pub fn methodrefs(classinfo : &ClassFile) -> BiMap<u16, String> {
-    let constpool = constants(&classinfo);
+    let constpool = constants(classinfo);
     let mut refmap : BiMap<u16, String> = BiMap::new();
 
     for (index, value) in &constpool {
-        match value {
-            ConstPoolValue::MethodRef(_, desc_ref) => {
-                refmap.insert(*index, parse_method_signature(&classinfo, desc_ref).unwrap());
-            },
-            _ => ()
+        if let ConstPoolValue::MethodRef(_, desc_ref) = value {
+            refmap.insert(*index, parse_method_signature(classinfo, desc_ref).unwrap());
         }
     }
 
