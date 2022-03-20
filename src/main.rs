@@ -99,7 +99,7 @@ fn main() -> std::io::Result<()> {
 
             hexyl::Printer::new(
                 &mut std::io::stdout(),
-                false,
+                true,
                 hexyl::BorderStyle::Ascii,
                 true
             ).print_all(std::io::Cursor::new(binary)).unwrap();

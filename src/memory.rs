@@ -53,11 +53,10 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>) {
     let lutsize : usize = LUTENTRY * method_entry_count + LUTENTRY * consts_entry_count;
 
     let mut methodlut : Vec<u8> = Vec::with_capacity(lutsize);
-
     for (methodaddr, methodname) in memlayout {
         methodlut.push(((lutsize as u16 + methodaddr as u16) >> 8) as u8);
         methodlut.push(((lutsize as u16 + methodaddr as u16) & 0xff) as u8);
-        methodlut.push(0x00);
+        methodlut.push(if methodname == MAIN_SIG { 0x00 as u8 } else { codeblocks[&methodname].argcount as u8 });
         methodlut.push(codeblocks[&methodname].max_locals.try_into().unwrap());
     }
 

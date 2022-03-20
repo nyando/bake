@@ -136,6 +136,7 @@ pub struct CodeAttribute {
 pub struct BaliCode {
     pub max_stack: u16,
     pub max_locals: u16,
+    pub argcount: u16,
     pub code: Vec<u8>
 }
 
@@ -294,6 +295,7 @@ pub fn codeblocks(class: &ClassFile) -> BTreeMap<String, BaliCode> {
             let code_info = BaliCode {
                 max_stack: code_attr.max_stack,
                 max_locals: code_attr.max_locals,
+                argcount: parse_argcount(&method_desc),
                 code: code_attr.code
             };
             method_name.push_str(&method_desc);
@@ -303,4 +305,18 @@ pub fn codeblocks(class: &ClassFile) -> BTreeMap<String, BaliCode> {
     }
 
     codeblocks
+}
+
+fn parse_argcount(method_sig: &str) -> u16 {
+
+    let split : Vec<&str> = method_sig.split(|c| (c == '(') || (c == ')')).collect();
+
+    let mut argcount = 0;
+    let arglist = &split[1];
+    for c in arglist.chars() {
+        // count the number of arguments == letters between parentheses of a method signature
+        if c == '[' { continue; } else { argcount = argcount + 1; }
+    }
+
+    argcount
 }
