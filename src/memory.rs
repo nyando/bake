@@ -1,5 +1,3 @@
-extern crate bimap;
-
 use crate::ClassFile;
 use crate::{ConstPoolValue, constants, codeblocks, opmap, methodrefs};
 
