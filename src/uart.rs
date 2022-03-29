@@ -1,4 +1,3 @@
-extern crate serialport;
 use serialport::{SerialPort, DataBits, FlowControl, Parity, StopBits};
 
 use std::time::Duration;

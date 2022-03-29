@@ -1,7 +1,3 @@
-extern crate bat;
-extern crate clap;
-extern crate hexyl;
-
 use clap::{Subcommand, Parser};
 
 mod structs;

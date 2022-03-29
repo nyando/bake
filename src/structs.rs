@@ -1,6 +1,3 @@
-extern crate binrw;
-extern crate bimap;
-
 use bimap::BiMap;
 
 use binrw::{binrw, BinReaderExt};
