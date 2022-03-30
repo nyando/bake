@@ -3,7 +3,8 @@ use crate::{ConstPoolValue, constants, codeblocks, opmap, methodrefs};
 
 use bimap::BiBTreeMap;
 
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
+use std::collections::btree_map::BTreeMap;
 
 pub const INIT_SIG : &str = "<init>()V";
 pub const MAIN_SIG : &str = "main([Ljava/lang/String;)V";

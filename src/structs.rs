@@ -2,7 +2,7 @@ use bimap::BiMap;
 
 use binrw::{binrw, BinReaderExt};
 
-use std::collections::BTreeMap;
+use std::collections::btree_map::BTreeMap;
 
 use std::io::{Cursor, Error, ErrorKind};
 use std::fs::File;
