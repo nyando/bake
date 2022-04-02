@@ -1,8 +1,7 @@
-use bimap::BiMap;
-
 use binrw::{binrw, BinReaderExt};
 
 use std::collections::btree_map::BTreeMap;
+use bimap::BiBTreeMap;
 
 use std::io::{Cursor, Error, ErrorKind};
 use std::fs::File;
@@ -242,9 +241,9 @@ pub fn parse_method_signature(classinfo : &ClassFile, desc_ref : &u16) -> Result
 ///
 /// Returns a map of integers (constpool indices) to strings (method signatures).
 ///
-pub fn methodrefs(classinfo : &ClassFile) -> BiMap<u16, String> {
+pub fn methodrefs(classinfo : &ClassFile) -> BiBTreeMap<u16, String> {
     let constpool = constants(classinfo);
-    let mut refmap : BiMap<u16, String> = BiMap::new();
+    let mut refmap : BiBTreeMap<u16, String> = BiBTreeMap::new();
 
     for (index, value) in &constpool {
         if let ConstPoolValue::MethodRef(_, desc_ref) = value {
