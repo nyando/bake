@@ -90,7 +90,6 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
     let opmap = opmap();
 
     // map method reference index to Bali program memory address
-    // TODO this is completely borked
     let mut refaddr : HashMap<u16, u16> = HashMap::new();
     for (methodref, methodname) in methodrefs {
         if methodname == INIT_SIG { continue; }
