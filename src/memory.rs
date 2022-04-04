@@ -58,7 +58,7 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>, BTreeMap<String
         methodlut.push(((lutsize as u16 + methodaddr as u16) >> 8) as u8);
         methodlut.push(((lutsize as u16 + methodaddr as u16) & 0xff) as u8);
         methodlut.push(if methodname == MAIN_SIG { 0x00 as u8 } else { codeblocks[&methodname].argcount as u8 });
-        methodlut.push(if methodname == MAIN_SIG { 0x00 as u8 } else { codeblocks[&methodname].max_locals.try_into().unwrap() });
+        methodlut.push(codeblocks[&methodname].max_locals.try_into().unwrap());
         nameindex.insert(methodname, i);
         i += 1;
     }

@@ -289,7 +289,7 @@ pub fn codeblocks(class: &ClassFile) -> BTreeMap<String, BaliCode> {
                 max_stack: code_attr.max_stack,
                 max_locals: code_attr.max_locals,
                 argcount: parse_argcount(&method_desc),
-                code: replace_iinc(&code_attr.code)
+                code: code_attr.code
             };
             method_name.push_str(&method_desc);
             codeblocks.insert(method_name, code_info);
@@ -298,36 +298,6 @@ pub fn codeblocks(class: &ClassFile) -> BTreeMap<String, BaliCode> {
     }
 
     codeblocks
-}
-
-const IINC   : u8 = 0x84;
-const ILOAD  : u8 = 0x15;
-const BIPUSH : u8 = 0x10;
-const IADD   : u8 = 0x60;
-const ISTORE : u8 = 0x36;
-
-fn replace_iinc(code: &Vec<u8>) -> Vec<u8> {
-    let mut code_out : Vec<u8> = Vec::new();
-
-    let mut argc = 0;
-    for i in 0..code.len() {
-        if argc > 0 {
-            argc = argc - 1;
-            continue;
-        }
-
-        if code[i] == IINC {
-            let index = code[i + 1];
-            let byte = code[i + 2];
-            let mut iinc_replace = vec!(ILOAD, index, BIPUSH, byte, IADD, ISTORE, index);
-            code_out.append(&mut iinc_replace);
-            argc = 2;
-        } else {
-            code_out.push(code[i]);
-        }
-    }
-
-    code_out
 }
 
 fn parse_argcount(method_sig: &str) -> u16 {
