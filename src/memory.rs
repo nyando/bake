@@ -132,6 +132,10 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
                 code_new[i + 1] = newref as u8;
             }
 
+            if methodname == MAIN_SIG && op.mnemonic == "return" {
+                code_new[i] = 0xFF as u8; // NOP
+            }
+
         }
        
         mem.append(&mut code_new);

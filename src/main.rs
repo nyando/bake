@@ -54,6 +54,12 @@ enum Commands {
         /// Serial device identifier of target Bali device
         #[clap(short, long)]
         device: String
+    },
+    /// Read number of cycles needed to execute program
+    Read {
+        /// Serial device identifier of target Bali device
+        #[clap(short, long)]
+        device: String
     }
 }
 
@@ -104,6 +110,10 @@ fn main() -> std::io::Result<()> {
             let binary = read_binary(bin);
             let mut port = open_serial(device);
             binwrite(&mut port, &binary)?;
+        },
+        Commands::Read { device } => {
+            let mut port = open_serial(device);
+            readcycles(&mut port)?;
         }
     };
 
