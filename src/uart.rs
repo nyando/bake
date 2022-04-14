@@ -36,21 +36,7 @@ pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> std::io::Result
 
     let mut cycles : Vec<u8> = vec![0; 4];
     port.read_exact(&mut cycles)?;
-    for entry in cycles { println!("serial port confirmed byte {:#04x}", entry); }
+    for entry in cycles { println!("program cycle time: {:#04x}", entry); }
     
     Ok(())
-}
-
-pub fn readcycles(port : &mut Box<dyn SerialPort>) -> std::io::Result<()> {
-
-    let mut response : Vec<u8> = vec![0; 4];
-    port.read_exact(&mut response)?;
-    for entry in response { println!("cycle counter value {:#04x}", entry); }
-
-    Ok(())
-
-}
-
-pub fn _memread(_port : &mut Box<dyn SerialPort>, _lo : usize, _hi : usize) {
-    // read from Bali processor memory
 }
