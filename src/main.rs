@@ -46,6 +46,11 @@ enum Commands {
         #[clap(short, long)]
         classfile: String
     },
+    /// Generate Bali file for use with SystemVerilog testbenches from JVM class file
+    Testfile {
+        #[clap(short, long)]
+        classfile: String
+    },
     /// Write Bali binary to serial Bali device
     Serial {
         /// Path of the binary file to transfer to Bali device
@@ -100,6 +105,19 @@ fn main() -> std::io::Result<()> {
                 true
             ).print_all(std::io::Cursor::new(binary)).unwrap();
         },
+        Commands::Testfile { classfile } => {
+            let classinfo = read_classfile(classfile)?;
+            let binary = binarygen(&classinfo);
+            let outpath = Path::new(&classfile).with_extension(".mem");
+            let mut buffer = File::create(outpath.to_str().unwrap())?;
+
+            let mut output = String::new();
+            for byte in binary {
+                output.push_str(&format!("{:02x?} ", byte));
+            }
+
+            write!(buffer, "{}", output)?;
+        }
         Commands::Serial { bin, device } => {
             let binary = read_binary(bin);
             let mut port = open_serial(device);
