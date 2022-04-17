@@ -44,7 +44,10 @@ enum Commands {
     Binary {
         /// Path of the class file to convert to binary 
         #[clap(short, long)]
-        classfile: String
+        classfile: String,
+        /// Set this flag to print the hex output of the binary
+        #[clap(short, long)]
+        output: bool
     },
     /// Generate Bali file for use with SystemVerilog testbenches from JVM class file
     Testfile {
@@ -90,7 +93,7 @@ fn main() -> std::io::Result<()> {
                 print_method(&classinfo, &signature, &code_info);
             }
         },
-        Commands::Binary { classfile } => {
+        Commands::Binary { classfile, output } => {
             let classinfo = read_classfile(classfile)?;
             let binary = binarygen(&classinfo);
             let outpath = Path::new(&classfile).with_extension("bali.out");
@@ -98,17 +101,19 @@ fn main() -> std::io::Result<()> {
 
             buffer.write_all(&binary)?;
 
-            hexyl::Printer::new(
-                &mut std::io::stdout(),
-                true,
-                hexyl::BorderStyle::Ascii,
-                true
-            ).print_all(std::io::Cursor::new(binary)).unwrap();
+            if *output {
+                hexyl::Printer::new(
+                    &mut std::io::stdout(),
+                    true,
+                    hexyl::BorderStyle::Ascii,
+                    true
+                ).print_all(std::io::Cursor::new(binary)).unwrap();
+            }
         },
         Commands::Testfile { classfile } => {
             let classinfo = read_classfile(classfile)?;
             let binary = binarygen(&classinfo);
-            let outpath = Path::new(&classfile).with_extension(".mem");
+            let outpath = Path::new(&classfile).with_extension("mem");
             let mut buffer = File::create(outpath.to_str().unwrap())?;
 
             let mut output = String::new();
@@ -121,7 +126,10 @@ fn main() -> std::io::Result<()> {
         Commands::Serial { bin, device } => {
             let binary = read_binary(bin);
             let mut port = open_serial(device);
-            binwrite(&mut port, &binary)?;
+            
+            if let Ok(turnaround) = binwrite(&mut port, &binary) {
+                println!("turnaround time: {}", turnaround);
+            }
         }
     };
 

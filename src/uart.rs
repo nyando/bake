@@ -13,14 +13,13 @@ pub fn open_serial(port_id : &str) -> Box<dyn SerialPort> {
         .expect("could not open serial port")
 }
 
-pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> std::io::Result<()> {
+pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> Result<u32, std::io::Error> {
 
     let memlen : Vec<u8> = vec!(bin.len().try_into().unwrap());
     port.write_all(&memlen)?;
     let mut response : Vec<u8> = vec![0; 1];
     port.read_exact(&mut response)?;
-    for entry in response { println!("program length {:#04x} confirmed", entry); }
-
+    
     for byte in bin {
         
         let to_write : Vec<u8> = vec!(*byte);
@@ -28,15 +27,16 @@ pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> std::io::Result
 
         let mut response : Vec<u8> = vec![0; 1];
         port.read_exact(&mut response)?;
-        for entry in response { println!("serial port confirmed byte {:#04x}", entry); }
-
+        
     }
-
-    println!("finished writing program, waiting for turnaround time response");
 
     let mut cycles : Vec<u8> = vec![0; 4];
     port.read_exact(&mut cycles)?;
-    for entry in cycles { println!("program cycle time: {:#04x}", entry); }
     
-    Ok(())
+    let turnaround : u32 = (( cycles[3] as u32 ) << 24) + 
+                           (( cycles[2] as u32 ) << 16) + 
+                           (( cycles[1] as u32 ) << 8)  + 
+                            ( cycles[0] as u32 );
+    
+    Ok(turnaround)
 }
