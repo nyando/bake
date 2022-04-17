@@ -13,12 +13,30 @@ pub fn open_serial(port_id : &str) -> Box<dyn SerialPort> {
         .expect("could not open serial port")
 }
 
-pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8]) -> Result<u32, std::io::Error> {
+pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8], long : bool) -> Result<u32, std::io::Error> {
 
-    let memlen : Vec<u8> = vec!(bin.len().try_into().unwrap());
-    port.write_all(&memlen)?;
-    let mut response : Vec<u8> = vec![0; 1];
-    port.read_exact(&mut response)?;
+    if !long {
+        
+        let memlen : Vec<u8> = vec!(bin.len().try_into().unwrap());
+        port.write_all(&memlen)?;
+        let mut response : Vec<u8> = vec![0; 1];
+        port.read_exact(&mut response)?;
+    
+    } else {
+        
+        let binlen : u16 = bin.len().try_into().unwrap();
+        
+        let mut memlen : Vec<u8> = Vec::<u8>::new();
+        memlen.push((binlen & 0xff) as u8);
+        memlen.push((binlen >> 8) as u8);
+
+        for byte in memlen {
+            port.write_all(&vec!(byte))?;
+            let mut response : Vec<u8> = vec![0; 1];
+            port.read_exact(&mut response)?;
+        }
+
+    }
     
     for byte in bin {
         

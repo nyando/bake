@@ -61,7 +61,10 @@ enum Commands {
         bin: String,
         /// Serial device identifier of target Bali device
         #[clap(short, long)]
-        device: String
+        device: String,
+        /// Set this flag if Bali device expects 16 bit program length
+        #[clap(short, long)]
+        long: bool
     }
 }
 
@@ -123,12 +126,12 @@ fn main() -> std::io::Result<()> {
 
             write!(buffer, "{}", output)?;
         }
-        Commands::Serial { bin, device } => {
+        Commands::Serial { bin, device, long } => {
             let binary = read_binary(bin);
             let mut port = open_serial(device);
             
-            if let Ok(turnaround) = binwrite(&mut port, &binary) {
-                println!("turnaround time: {}", turnaround);
+            if let Ok(turnaround) = binwrite(&mut port, &binary, *long) {
+                println!("{}", turnaround);
             }
         }
     };
