@@ -8,12 +8,12 @@ pub fn open_serial(port_id : &str) -> Box<dyn SerialPort> {
         .flow_control(FlowControl::None)
         .parity(Parity::None)
         .stop_bits(StopBits::One)
-        .timeout(Duration::from_millis(1000))
+        .timeout(Duration::from_millis(10000))
         .open()
         .expect("could not open serial port")
 }
 
-pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8], long : bool) -> Result<u32, std::io::Error> {
+pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8], long : bool) -> Result<u64, std::io::Error> {
 
     if !long {
         
@@ -48,13 +48,17 @@ pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8], long : bool) -> Re
         
     }
 
-    let mut cycles : Vec<u8> = vec![0; 4];
+    let mut cycles : Vec<u8> = vec![0; 8];
     port.read_exact(&mut cycles)?;
     
-    let turnaround : u32 = (( cycles[3] as u32 ) << 24) + 
-                           (( cycles[2] as u32 ) << 16) + 
-                           (( cycles[1] as u32 ) << 8)  + 
-                            ( cycles[0] as u32 );
+    let turnaround : u64 = (( cycles[7] as u64 ) << 56) + 
+                           (( cycles[6] as u64 ) << 48) + 
+                           (( cycles[5] as u64 ) << 40) + 
+                           (( cycles[4] as u64 ) << 32) + 
+                           (( cycles[3] as u64 ) << 24) + 
+                           (( cycles[2] as u64 ) << 16) + 
+                           (( cycles[1] as u64 ) << 8)  + 
+                            ( cycles[0] as u64 );
     
     Ok(turnaround)
 }
