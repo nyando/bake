@@ -65,6 +65,12 @@ enum Commands {
         /// Set this flag if Bali device expects 16 bit program length
         #[clap(short, long)]
         long: bool
+    },
+    /// Verify JVM class file compatibility to Bali processor
+    Verify {
+        /// Path of the class file to verify
+        #[clap(short, long)]
+        classfile: String
     }
 }
 
@@ -87,7 +93,7 @@ fn main() -> std::io::Result<()> {
             for (index, value) in constants(&classinfo) {
                 println!("{}", constoutput(&classinfo, &index, &value));
             }
-        },
+        }
         Commands::Method { classfile } => {
             let classinfo = read_classfile(classfile)?;
             for (name, code_info) in codeblocks(&classinfo) {
@@ -95,7 +101,7 @@ fn main() -> std::io::Result<()> {
                 let signature = methodstring(&name);
                 print_method(&classinfo, &signature, &code_info);
             }
-        },
+        }
         Commands::Binary { classfile, output } => {
             let classinfo = read_classfile(classfile)?;
             let binary = binarygen(&classinfo);
@@ -112,7 +118,7 @@ fn main() -> std::io::Result<()> {
                     true
                 ).print_all(std::io::Cursor::new(binary)).unwrap();
             }
-        },
+        }
         Commands::Testfile { classfile } => {
             let classinfo = read_classfile(classfile)?;
             let binary = binarygen(&classinfo);
@@ -133,6 +139,9 @@ fn main() -> std::io::Result<()> {
             if let Ok(turnaround) = binwrite(&mut port, &binary, *long) {
                 println!("{}", turnaround);
             }
+        }
+        Commands::Verify { classfile } => {
+            let _classinfo = read_classfile(classfile);
         }
     };
 
