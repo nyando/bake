@@ -1,4 +1,4 @@
-use clap::{Subcommand, Parser};
+use clap::{Parser, Subcommand};
 
 mod structs;
 use structs::*;
@@ -15,9 +15,9 @@ use print::*;
 mod uart;
 use uart::*;
 
-use std::path::Path;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -32,27 +32,27 @@ enum Commands {
     Consts {
         /// Path of the class file to parse
         #[clap(short, long)]
-        classfile: String
+        classfile: String,
     },
     /// Extract method information from JVM class file
     Method {
         /// Path of the class file to parse
         #[clap(short, long)]
-        classfile: String
+        classfile: String,
     },
     /// Generate Bali binary from JVM class file
     Binary {
-        /// Path of the class file to convert to binary 
+        /// Path of the class file to convert to binary
         #[clap(short, long)]
         classfile: String,
         /// Set this flag to print the hex output of the binary
         #[clap(short, long)]
-        output: bool
+        output: bool,
     },
     /// Generate Bali file for use with SystemVerilog testbenches from JVM class file
     Testfile {
         #[clap(short, long)]
-        classfile: String
+        classfile: String,
     },
     /// Write Bali binary to serial Bali device
     Serial {
@@ -64,17 +64,17 @@ enum Commands {
         device: String,
         /// Set this flag if Bali device expects 16 bit program length
         #[clap(short, long)]
-        long: bool
+        long: bool,
     },
     /// Verify JVM class file compatibility to Bali processor
     Verify {
         /// Path of the class file to verify
         #[clap(short, long)]
-        classfile: String
-    }
+        classfile: String,
+    },
 }
 
-fn read_binary(path : &str) -> Vec<u8> {
+fn read_binary(path: &str) -> Vec<u8> {
     let res = File::open(path);
     let mut buffer = Vec::new();
 
@@ -84,7 +84,6 @@ fn read_binary(path : &str) -> Vec<u8> {
 }
 
 fn main() -> std::io::Result<()> {
-
     let task = Args::parse();
 
     match &task.command {
@@ -97,7 +96,9 @@ fn main() -> std::io::Result<()> {
         Commands::Method { classfile } => {
             let classinfo = read_classfile(classfile)?;
             for (name, code_info) in codeblocks(&classinfo) {
-                if name == INIT_SIG { continue; }
+                if name == INIT_SIG {
+                    continue;
+                }
                 let signature = methodstring(&name);
                 print_method(&classinfo, &signature, &code_info);
             }
@@ -115,8 +116,10 @@ fn main() -> std::io::Result<()> {
                     &mut std::io::stdout(),
                     true,
                     hexyl::BorderStyle::Ascii,
-                    true
-                ).print_all(std::io::Cursor::new(binary)).unwrap();
+                    true,
+                )
+                .print_all(std::io::Cursor::new(binary))
+                .unwrap();
             }
         }
         Commands::Testfile { classfile } => {
@@ -135,7 +138,7 @@ fn main() -> std::io::Result<()> {
         Commands::Serial { bin, device, long } => {
             let binary = read_binary(bin);
             let mut port = open_serial(device);
-            
+
             if let Ok(turnaround) = binwrite(&mut port, &binary, *long) {
                 println!("{}", turnaround);
             }

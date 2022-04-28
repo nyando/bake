@@ -1,68 +1,78 @@
-use crate::structs::ClassFile;
-use crate::structs::{ConstPoolValue, constants, codeblocks, methodrefs};
 use crate::opcodes::opmap;
+use crate::structs::ClassFile;
+use crate::structs::{codeblocks, constants, methodrefs, ConstPoolValue};
 
 use bimap::BiBTreeMap;
 
-use std::collections::HashMap;
 use std::collections::btree_map::BTreeMap;
+use std::collections::HashMap;
 
-pub const INIT_SIG : &str = "<init>()V";
-pub const MAIN_SIG : &str = "main([Ljava/lang/String;)V";
+pub const INIT_SIG: &str = "<init>()V";
+pub const MAIN_SIG: &str = "main([Ljava/lang/String;)V";
 
-const LUTENTRY : usize = 4;
+const LUTENTRY: usize = 4;
 
-fn memlayout(classinfo : &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
+fn memlayout(classinfo: &ClassFile) -> (BiBTreeMap<u16, String>, u16) {
     let codeblocks = codeblocks(classinfo);
 
     let maincode = &codeblocks[MAIN_SIG];
-    let mainsize : u16 = maincode.code.len() as u16;
+    let mainsize: u16 = maincode.code.len() as u16;
 
-    let mut currentaddr : u16 = 0;
-    let mut methodaddrs : BiBTreeMap<u16, String> = BiBTreeMap::new();
+    let mut currentaddr: u16 = 0;
+    let mut methodaddrs: BiBTreeMap<u16, String> = BiBTreeMap::new();
 
     methodaddrs.insert(currentaddr, MAIN_SIG.to_string());
     currentaddr += mainsize;
 
     for (name, codeblock) in codeblocks {
-        
         // main is already in the map, <init> ignored
-        if name == MAIN_SIG || name == INIT_SIG { continue; }
+        if name == MAIN_SIG || name == INIT_SIG {
+            continue;
+        }
 
-        let codesize : u16 = codeblock.code.len() as u16;
+        let codesize: u16 = codeblock.code.len() as u16;
         methodaddrs.insert(currentaddr, name);
         currentaddr += codesize;
-
     }
 
     (methodaddrs, currentaddr)
 }
 
-fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>, BTreeMap<String, u16>) {
+fn luts(classinfo: &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>, BTreeMap<String, u16>) {
     let codeblocks = codeblocks(classinfo);
     let (memlayout, _) = memlayout(classinfo);
 
-    let ints : BTreeMap<u16, i32> = constants(classinfo)
+    let ints: BTreeMap<u16, i32> = constants(classinfo)
         .into_iter()
         .filter(|(_, v)| matches!(v, ConstPoolValue::Integer(_)))
-        .map(|(k, v)| if let ConstPoolValue::Integer(value) = v { (k, value) } else { (0, 0) })
+        .map(|(k, v)| {
+            if let ConstPoolValue::Integer(value) = v {
+                (k, value)
+            } else {
+                (0, 0)
+            }
+        })
         .collect();
 
-    let method_entry_count : usize = memlayout.len();
-    let consts_entry_count : usize = ints.len();
-    let lutsize : usize = LUTENTRY * method_entry_count + LUTENTRY * consts_entry_count;
+    let method_entry_count: usize = memlayout.len();
+    let consts_entry_count: usize = ints.len();
+    let lutsize: usize = LUTENTRY * method_entry_count + LUTENTRY * consts_entry_count;
 
-    let mut methodlut : Vec<u8> = Vec::with_capacity(lutsize);
-    let mut nameindex : BTreeMap<String, u16> = BTreeMap::new();
+    let mut methodlut: Vec<u8> = Vec::with_capacity(lutsize);
+    let mut nameindex: BTreeMap<String, u16> = BTreeMap::new();
     for (i, (methodaddr, methodname)) in memlayout.into_iter().enumerate() {
         methodlut.push(((lutsize as u16 + methodaddr as u16) >> 8) as u8);
         methodlut.push(((lutsize as u16 + methodaddr as u16) & 0xff) as u8);
-        methodlut.push(if methodname == MAIN_SIG { 0x00_u8 } else { codeblocks[&methodname].argcount as u8 });
+        methodlut.push(if methodname == MAIN_SIG {
+            0x00_u8
+        } else {
+            codeblocks[&methodname].argcount as u8
+        });
         methodlut.push(codeblocks[&methodname].max_locals.try_into().unwrap());
         nameindex.insert(methodname, i.try_into().unwrap());
     }
 
-    let mut constmap : BTreeMap<u16, u16> = BTreeMap::new();
+    let mut constmap: BTreeMap<u16, u16> = BTreeMap::new();
     let mut memindex = method_entry_count as u8;
     for (poolindex, intvalue) in &ints {
         methodlut.push((intvalue >> 24) as u8);
@@ -82,16 +92,18 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>, BTreeMap<String
 ///
 /// Returns byte vector for writing to output file.
 ///
-pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
+pub fn binarygen(classinfo: &ClassFile) -> Vec<u8> {
     let methodrefs = methodrefs(classinfo);
     let (memlayout, codesize) = memlayout(classinfo);
     let (mut methodlut, intrefs, methodaddrs) = luts(classinfo);
     let opmap = opmap();
 
     // map method reference index to Bali program memory address
-    let mut refaddr : HashMap<u16, u16> = HashMap::new();
+    let mut refaddr: HashMap<u16, u16> = HashMap::new();
     for (methodref, methodname) in methodrefs {
-        if methodname == INIT_SIG { continue; }
+        if methodname == INIT_SIG {
+            continue;
+        }
         refaddr.insert(methodref, methodaddrs[&methodname]);
     }
 
@@ -102,7 +114,9 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
     mem.append(&mut methodlut);
 
     for (_, methodname) in memlayout {
-        if methodname == INIT_SIG { continue; }
+        if methodname == INIT_SIG {
+            continue;
+        }
 
         let code_old = codeblocks[&methodname].code.to_vec();
         let mut code_new = codeblocks[&methodname].code.to_vec();
@@ -114,7 +128,7 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
                 argcount -= 1;
                 continue;
             }
-            
+
             let op = &opmap[opcode];
             argcount = op.args;
 
@@ -134,9 +148,8 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
             if methodname == MAIN_SIG && op.mnemonic == "return" {
                 code_new[i] = 0xFF_u8; // NOP
             }
-
         }
-       
+
         mem.append(&mut code_new);
     }
 
