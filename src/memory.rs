@@ -1,5 +1,6 @@
-use crate::ClassFile;
-use crate::{ConstPoolValue, constants, codeblocks, opmap, methodrefs};
+use crate::structs::ClassFile;
+use crate::structs::{ConstPoolValue, constants, codeblocks, methodrefs};
+use crate::opcodes::opmap;
 
 use bimap::BiBTreeMap;
 
@@ -53,14 +54,12 @@ fn luts(classinfo : &ClassFile) -> (Vec<u8>, BTreeMap<u16, u16>, BTreeMap<String
 
     let mut methodlut : Vec<u8> = Vec::with_capacity(lutsize);
     let mut nameindex : BTreeMap<String, u16> = BTreeMap::new();
-    let mut i = 0;
-    for (methodaddr, methodname) in memlayout {
+    for (i, (methodaddr, methodname)) in memlayout.into_iter().enumerate() {
         methodlut.push(((lutsize as u16 + methodaddr as u16) >> 8) as u8);
         methodlut.push(((lutsize as u16 + methodaddr as u16) & 0xff) as u8);
-        methodlut.push(if methodname == MAIN_SIG { 0x00 as u8 } else { codeblocks[&methodname].argcount as u8 });
+        methodlut.push(if methodname == MAIN_SIG { 0x00_u8 } else { codeblocks[&methodname].argcount as u8 });
         methodlut.push(codeblocks[&methodname].max_locals.try_into().unwrap());
-        nameindex.insert(methodname, i);
-        i += 1;
+        nameindex.insert(methodname, i.try_into().unwrap());
     }
 
     let mut constmap : BTreeMap<u16, u16> = BTreeMap::new();
@@ -133,7 +132,7 @@ pub fn binarygen(classinfo : &ClassFile) -> Vec<u8> {
             }
 
             if methodname == MAIN_SIG && op.mnemonic == "return" {
-                code_new[i] = 0xFF as u8; // NOP
+                code_new[i] = 0xFF_u8; // NOP
             }
 
         }

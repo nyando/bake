@@ -308,7 +308,7 @@ fn parse_argcount(method_sig: &str) -> u16 {
     let arglist = &split[1];
     for c in arglist.chars() {
         // count the number of arguments == letters between parentheses of a method signature
-        if c == '[' { continue; } else { argcount = argcount + 1; }
+        if c == '[' { continue; } else { argcount += 1; }
     }
 
     argcount

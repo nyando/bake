@@ -3,6 +3,9 @@ name = "bake"
 version = "1.1.0"
 edition = "2021"
 
+[lib]
+name = "bake"
+
 [dependencies]
 bat = "0.19.0"
 bimap = "0.6.2"

@@ -31,7 +31,7 @@ pub fn binwrite(port : &mut Box<dyn SerialPort>, bin : &[u8], long : bool) -> Re
         memlen.push((binlen >> 8) as u8);
 
         for byte in memlen {
-            port.write_all(&vec!(byte))?;
+            port.write_all(&[byte])?;
             let mut response : Vec<u8> = vec![0; 1];
             port.read_exact(&mut response)?;
         }
